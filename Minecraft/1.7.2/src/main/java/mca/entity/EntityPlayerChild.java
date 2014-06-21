@@ -18,13 +18,15 @@ import mca.core.MCA;
 import mca.core.io.WorldPropertiesManager;
 import mca.core.util.Utility;
 import mca.core.util.object.PlayerMemory;
-import mca.enums.EnumPacketType;
 import mca.enums.EnumRelation;
 import mca.item.AbstractBaby;
 import mca.item.ItemArrangersRing;
 import mca.item.ItemEngagementRing;
 import mca.item.ItemVillagerEditor;
 import mca.item.ItemWeddingRing;
+import mca.network.packets.PacketOpenGui;
+import mca.network.packets.PacketSetFieldValue;
+import mca.network.packets.PacketSetInventory;
 import net.minecraft.entity.EntityLivingBase;
 import net.minecraft.entity.ai.EntityAIMoveIndoors;
 import net.minecraft.entity.ai.EntityAIMoveTowardsRestriction;
@@ -53,7 +55,6 @@ import net.minecraft.util.ChatComponentText;
 import net.minecraft.world.World;
 
 import com.radixshock.radixcore.logic.LogicHelper;
-import com.radixshock.radixcore.network.Packet;
 
 /**
  * Defines a child belonging to a player.
@@ -291,7 +292,7 @@ public class EntityPlayerChild extends AbstractChild
 			{
 				if (itemStack.getItem() instanceof ItemVillagerEditor)
 				{
-					MCA.packetPipeline.sendPacketToPlayer(new Packet(EnumPacketType.OpenGui, getEntityId(), Constants.ID_GUI_EDITOR), (EntityPlayerMP)player);
+					MCA.packetHandler.sendPacketToPlayer(new PacketOpenGui(getEntityId(), Constants.ID_GUI_EDITOR), (EntityPlayerMP)player);
 					return true;
 				}
 
@@ -302,7 +303,7 @@ public class EntityPlayerChild extends AbstractChild
 						name = itemStack.getDisplayName();
 						Utility.removeItemFromPlayer(itemStack, player);
 
-						MCA.packetPipeline.sendPacketToAllPlayers(new Packet(EnumPacketType.SetFieldValue, getEntityId(), "name", name));
+						MCA.packetHandler.sendPacketToAllPlayers(new PacketSetFieldValue(getEntityId(), "name", name));
 					}
 
 					return true;
@@ -315,12 +316,12 @@ public class EntityPlayerChild extends AbstractChild
 				{
 					if (isMarriedToPlayer && player.getCommandSenderName().equals(spousePlayerName))
 					{
-						MCA.packetPipeline.sendPacketToPlayer(new Packet(EnumPacketType.OpenGui, getEntityId(), Constants.ID_GUI_SPOUSE), (EntityPlayerMP)player);
+						MCA.packetHandler.sendPacketToPlayer(new PacketOpenGui(getEntityId(), Constants.ID_GUI_SPOUSE), (EntityPlayerMP)player);
 					}
 
 					else
 					{
-						MCA.packetPipeline.sendPacketToPlayer(new Packet(EnumPacketType.OpenGui, getEntityId(), Constants.ID_GUI_PCHILD), (EntityPlayerMP)player);
+						MCA.packetHandler.sendPacketToPlayer(new PacketOpenGui(getEntityId(), Constants.ID_GUI_PCHILD), (EntityPlayerMP)player);
 					}
 				}
 
@@ -328,12 +329,12 @@ public class EntityPlayerChild extends AbstractChild
 				{
 					if (isAdult && isMarriedToVillager && isMarriedToPlayer)
 					{
-						MCA.packetPipeline.sendPacketToPlayer(new Packet(EnumPacketType.OpenGui, getEntityId(), Constants.ID_GUI_ADULT), (EntityPlayerMP)player);
+						MCA.packetHandler.sendPacketToPlayer(new PacketOpenGui(getEntityId(), Constants.ID_GUI_ADULT), (EntityPlayerMP)player);
 					}
 
 					else
 					{
-						MCA.packetPipeline.sendPacketToPlayer(new Packet(EnumPacketType.OpenGui, getEntityId(), Constants.ID_GUI_VCHILD), (EntityPlayerMP)player);
+						MCA.packetHandler.sendPacketToPlayer(new PacketOpenGui(getEntityId(), Constants.ID_GUI_VCHILD), (EntityPlayerMP)player);
 					}
 				}
 			}
@@ -408,7 +409,7 @@ public class EntityPlayerChild extends AbstractChild
 					inventory.inventoryItems[36 + armor.armorType] = transferStack;
 
 					Utility.removeItemFromPlayer(itemStack, player);
-					MCA.packetPipeline.sendPacketToAllPlayers(new Packet(EnumPacketType.SetInventory, getEntityId(), inventory));
+					MCA.packetHandler.sendPacketToAllPlayers(new PacketSetInventory(getEntityId(), inventory));
 				}
 
 				else if (itemStack.getItem() instanceof ItemTool || itemStack.getItem() instanceof ItemSword || 
@@ -418,7 +419,7 @@ public class EntityPlayerChild extends AbstractChild
 					inventory.setWornArmorItems();
 
 					Utility.removeItemFromPlayer(itemStack, player);
-					MCA.packetPipeline.sendPacketToAllPlayers(new Packet(EnumPacketType.SetInventory, getEntityId(), inventory));
+					MCA.packetHandler.sendPacketToAllPlayers(new PacketSetInventory(getEntityId(), inventory));
 				}
 
 				else if (itemStack.getItem() instanceof AbstractBaby)
@@ -429,7 +430,7 @@ public class EntityPlayerChild extends AbstractChild
 				else if (itemStack.getItem() instanceof ItemAppleGold)
 				{
 					this.age += LogicHelper.getNumberInRange(30, 90);
-					MCA.packetPipeline.sendPacketToAllPlayers(new Packet(EnumPacketType.SetFieldValue, getEntityId(), "age", age));
+					MCA.packetHandler.sendPacketToAllPlayers(new PacketSetFieldValue(getEntityId(), "age", age));
 				}
 				
 				else
@@ -437,7 +438,7 @@ public class EntityPlayerChild extends AbstractChild
 					doGift(itemStack, player);
 				}
 
-				MCA.packetPipeline.sendPacketToPlayer(new Packet(EnumPacketType.SetFieldValue, getEntityId(), "playerMemoryMap", playerMemoryMap), (EntityPlayerMP)player);
+				MCA.packetHandler.sendPacketToPlayer(new PacketSetFieldValue(getEntityId(), "playerMemoryMap", playerMemoryMap), (EntityPlayerMP)player);
 			}
 		}
 
@@ -615,7 +616,7 @@ public class EntityPlayerChild extends AbstractChild
 						manager.worldProperties.heirId = this.mcaID;
 						manager.saveWorldProperties();
 
-						MCA.packetPipeline.sendPacketToServer(new Packet(EnumPacketType.SetInventory, getEntityId(), inventory));
+						MCA.packetHandler.sendPacketToServer(new PacketSetInventory(getEntityId(), inventory));
 						notifyPlayer(player, MCA.getInstance().getLanguageLoader().getString("heir.set.success", null, this, false));
 						return;
 					}
@@ -730,7 +731,6 @@ public class EntityPlayerChild extends AbstractChild
 						if (runawayTicks >= 24000)
 						{
 							player.addChatMessage(new ChatComponentText(MCA.getInstance().getLanguageLoader().getString("notify.child.ranaway", null, this, false)));
-							MCA.packetPipeline.sendPacketToAllPlayers(new Packet(EnumPacketType.KillEntity, getEntityId()));
 							setDeadWithoutNotification();
 						}
 					}
