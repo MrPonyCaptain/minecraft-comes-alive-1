@@ -27,7 +27,6 @@ import mca.network.packets.PacketOpenGui;
 import mca.network.packets.PacketSetFieldValue;
 import mca.network.packets.PacketSetInventory;
 import net.minecraft.entity.EntityLivingBase;
-import net.minecraft.entity.ai.EntityAIMoveIndoors;
 import net.minecraft.entity.ai.EntityAIMoveTowardsRestriction;
 import net.minecraft.entity.ai.EntityAIOpenDoor;
 import net.minecraft.entity.ai.EntityAIRestrictOpenDoor;
